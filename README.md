@@ -37,6 +37,7 @@ npm start
 - database directory bootstrap
 - primary database schema migration bootstrap
 - local app.db translation table bootstrap
+- renderer SQLite sync bridge
 
 应用启动链路现在是：
 

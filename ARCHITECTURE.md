@@ -57,6 +57,7 @@
 - database directory bootstrap
 - primary database schema migration bootstrap
 - local app.db monthly translation table bootstrap
+- renderer SQLite sync bridge via preload
 - SOCKS5 bridge for session proxying
 - screenshot IPC and overlay service (P0)
 
@@ -79,7 +80,7 @@
 
 - `src/main/services/database-service.ts` 已接管主进程数据库启动、schema 升级和 `app.db` 月表引导。
 - `bootstrap.ts` 会先初始化数据库，再加载 legacy `dist-electron/main.js`。
-- 渲染层的 `qt.initialize/select/insert/update` 仍在 `dist/assets` bundle 内，后续应按仓储模块逐步迁移。
+- 渲染层的 `qt.initialize/select/insert/update` 仍在 `dist/assets` bundle 内，但 `better-sqlite3` 已通过 `src/main/preload.ts` 和 `database-sync` 桥接到主进程，后续可在不改压缩 bundle 的前提下逐步把通用 SQL 收敛成仓储模块。
 
 当前截图模块的状态：
 
