@@ -11,6 +11,7 @@
 - `recipes/archives/`: 开发态运行时需要的 recipe 归档目录
 - `scripts/`: 维护脚本
 - `readable/`: bundle 可读副本，不参与运行
+- `capture/`: 截图覆盖层页面资源
 
 ## Common commands
 
@@ -31,8 +32,11 @@ npm start
 - `window` IPC
 - `session` IPC
 - `shell` IPC
+- `screenshot` IPC and overlay service (P0, translation removed)
 - window / tray registry
 - database directory bootstrap
+- primary database schema migration bootstrap
+- local app.db translation table bootstrap
 
 应用启动链路现在是：
 

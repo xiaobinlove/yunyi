@@ -1,10 +1,11 @@
 import path from "node:path";
 import { ipcMain } from "electron";
-import { getPrimaryDatabasePath } from "../runtime/database";
+import { getLocalAppDatabasePath, getPrimaryDatabasePath } from "../runtime/database";
 import type { PathRuntime } from "../types";
 
 type PathMethod =
   | "getDbPath"
+  | "getLocalDbPath"
   | "getPreloadPath"
   | "getUserDataDir"
   | "chooseUserDataDir"
@@ -17,6 +18,8 @@ function createPathHandler(paths: PathRuntime) {
     switch (method) {
       case "getDbPath":
         return getPrimaryDatabasePath(paths);
+      case "getLocalDbPath":
+        return getLocalAppDatabasePath(paths);
       case "getPreloadPath":
         return path.join(paths.getDistElectronDir(), "recipes.js");
       case "getUserDataDir":

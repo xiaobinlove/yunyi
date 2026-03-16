@@ -1,18 +1,20 @@
 import path from "node:path";
 import * as electron from "electron";
 import { app } from "electron";
-import { ensureLegacyDatabaseDirs } from "./runtime/database";
 import paths from "./runtime/paths";
 import { registerRuntimeOverrides } from "./register-runtime-overrides";
+import { DatabaseService } from "./services/database-service";
 import { WindowRegistry } from "./window/window-registry";
 
 const windowRegistry = new WindowRegistry();
+const databaseService = new DatabaseService(paths);
+
 windowRegistry.installTrayTracking(electron);
 windowRegistry.installWindowTracking(app);
 
 process.env.APP_ROOT = paths.getRootDir();
 paths.initializeUserDataPath();
-ensureLegacyDatabaseDirs(paths);
+databaseService.ensureAllDatabases();
 
 require(path.join(paths.getDistElectronDir(), "main.js"));
 

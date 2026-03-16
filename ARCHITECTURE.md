@@ -55,14 +55,17 @@
 - shared runtime HTTP client
 - window / tray registry
 - database directory bootstrap
+- primary database schema migration bootstrap
+- local app.db monthly translation table bootstrap
 - SOCKS5 bridge for session proxying
+- screenshot IPC and overlay service (P0)
 
 这些能力已经从压缩 bundle 中抽离成独立模块，并通过运行时覆盖旧实现。
 
 ## Main process structure
 
 - `runtime/`: 路径、数据库目录等运行环境准备
-- `services/`: 可复用业务能力，如 recipes、session、shell、HTTP client、updater
+- `services/`: 可复用业务能力，如 database、recipes、session、shell、HTTP client、updater
 - `ipc/`: IPC 协议适配层，只负责参数分发和兼容旧接口
 - `lifecycle/`: 应用退出等主进程生命周期控制
 - `window/`: 主窗口、托盘、徽标等桌面行为控制
@@ -70,13 +73,19 @@
 
 ## Remaining legacy entrypoints
 
-当前主进程仍剩 1 个遗留入口需要继续接管：
+当前主进程的外围入口已经基本完成接管，剩余工作主要集中在两个方向：一是继续补齐已迁移模块的能力细节，二是把仍在渲染 bundle 内部的数据库 CRUD 逐步抽离出来。
 
-1. `screenshot`
+当前数据库模块的状态：
 
-其中：
+- `src/main/services/database-service.ts` 已接管主进程数据库启动、schema 升级和 `app.db` 月表引导。
+- `bootstrap.ts` 会先初始化数据库，再加载 legacy `dist-electron/main.js`。
+- 渲染层的 `qt.initialize/select/insert/update` 仍在 `dist/assets` bundle 内，后续应按仓储模块逐步迁移。
 
-- `screenshot` 依赖缺失的 `capture.html` / overlay 资源，继续迁移前需要先补全资源或重建覆盖层页面。
+当前截图模块的状态：
+
+- `screenshot` 已迁移到 `src/main`，当前仅保留基础截图能力：overlay 窗口、选区保存、Esc 退出和快捷键恢复。
+- `capture/capture.html` 与 `capture/capture.js` 是新的截图覆盖层资源。
+- 截图翻译相关实现已移除，仅保留兼容 IPC 壳以避免遗留调用报错。
 
 ## Explicit dependencies restored
 
