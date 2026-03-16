@@ -40,6 +40,8 @@ npm start
 - local app.db translation table bootstrap
 - renderer SQLite sync bridge
 - main database repositories (`client` / `contact` / `contact_setting` / `quick_reply`)
+- task repositories (`mass_send_task` / `mass_group_task`)
+- renderer bridge hot paths for `client`, `contact`, `contact_setting`, `quick_reply`, task tables
 
 应用启动链路现在是：
 
