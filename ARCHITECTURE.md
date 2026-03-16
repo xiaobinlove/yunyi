@@ -18,6 +18,7 @@
 
 - `src/main/bootstrap.ts`
 - `src/main/register-runtime-overrides.ts`
+- `src/main/database/*.ts`
 - `src/main/runtime/*.ts`
 - `src/main/ipc/*.ts`
 - `src/main/services/*.ts`
@@ -58,6 +59,7 @@
 - primary database schema migration bootstrap
 - local app.db monthly translation table bootstrap
 - renderer SQLite sync bridge via preload
+- main database repository layer (`client` / `contact` / `contact_setting` / `quick_reply`)
 - SOCKS5 bridge for session proxying
 - screenshot IPC and overlay service (P0)
 
@@ -66,6 +68,7 @@
 ## Main process structure
 
 - `runtime/`: 路径、数据库目录等运行环境准备
+- `database/`: SQLite 抽象、实体定义和主库仓储
 - `services/`: 可复用业务能力，如 database、recipes、session、shell、HTTP client、updater
 - `ipc/`: IPC 协议适配层，只负责参数分发和兼容旧接口
 - `lifecycle/`: 应用退出等主进程生命周期控制
@@ -80,7 +83,8 @@
 
 - `src/main/services/database-service.ts` 已接管主进程数据库启动、schema 升级和 `app.db` 月表引导。
 - `bootstrap.ts` 会先初始化数据库，再加载 legacy `dist-electron/main.js`。
-- 渲染层的 `qt.initialize/select/insert/update` 仍在 `dist/assets` bundle 内，但 `better-sqlite3` 已通过 `src/main/preload.ts` 和 `database-sync` 桥接到主进程，后续可在不改压缩 bundle 的前提下逐步把通用 SQL 收敛成仓储模块。
+- `src/main/database/` 已提供共享 SQLite 抽象，以及 `client`、`contact`、`contact_setting`、`quick_reply` 四组主库仓储。
+- 渲染层的 `qt.initialize/select/insert/update` 仍在 `dist/assets` bundle 内，但 `better-sqlite3` 已通过 `src/main/preload.ts` 和 `database-sync` 桥接到主进程；其中 `contact` / `contact_setting` 的关键特殊分支已经改走仓储，其余通用 SQL 可继续按同样方式逐步收口。
 
 当前截图模块的状态：
 

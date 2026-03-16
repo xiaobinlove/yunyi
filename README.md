@@ -7,6 +7,7 @@
 - `dist-electron/`: Electron 主进程与 preload 编译产物
 - `dist/`: 渲染进程编译产物和内置 recipes
 - `src/main/`: 新的可维护 TypeScript 主进程层
+- `src/main/database/`: SQLite 抽象、实体和仓储层
 - `build/main/`: `src/main` 的编译输出
 - `recipes/archives/`: 开发态运行时需要的 recipe 归档目录
 - `scripts/`: 维护脚本
@@ -38,6 +39,7 @@ npm start
 - primary database schema migration bootstrap
 - local app.db translation table bootstrap
 - renderer SQLite sync bridge
+- main database repositories (`client` / `contact` / `contact_setting` / `quick_reply`)
 
 应用启动链路现在是：
 
@@ -66,10 +68,11 @@ npm start
 
 ### 3. Introduce a maintainable TypeScript main-process layer
 
-新的 `src/main` 已经把高耦合逻辑拆成 `runtime`、`services`、`ipc`、`window` 四层，后续迁移应继续沿这套结构推进，而不是回到直接修改 bundle。
+新的 `src/main` 已经把高耦合逻辑拆成 `database`、`runtime`、`services`、`ipc`、`window` 五层，后续迁移应继续沿这套结构推进，而不是回到直接修改 bundle。
 
 ## Maintenance guidance
 
 - 优先修改 `src/main` 和 `scripts`，不要直接手改大段压缩 bundle。
+- 涉及主库读写时，优先复用 `src/main/database` 里的 SQLite 抽象和仓储，而不是在新代码里继续散写 SQL。
 - 改主进程逻辑前先跑 `npm run readable` 定位遗留实现，再在 `src/main` 做兼容接管。
 - 每次迁移新模块后，至少执行 `npm run typecheck` 和 `npm start` 做回归。

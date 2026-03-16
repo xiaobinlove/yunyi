@@ -1,30 +1,12 @@
+import type { SqliteDatabase } from "../database/sqlite";
+import { openSqliteDatabase } from "../database/sqlite";
 import { ensureLegacyDatabaseDirs, getLocalAppDatabasePath, getPrimaryDatabasePath } from "../runtime/database";
 import type { PathRuntime } from "../types";
 
-interface DatabasePragmaOptions {
-  simple?: boolean;
-}
-
-interface DatabaseStatementLike {
-  run(...params: unknown[]): unknown;
-}
-
-interface DatabaseConnectionLike {
-  close(): void;
-  exec(sql: string): unknown;
-  pragma(command: string, options?: DatabasePragmaOptions): unknown;
-  prepare(sql: string): DatabaseStatementLike;
-  transaction<T extends (...args: never[]) => unknown>(callback: T): T;
-}
-
 interface SchemaMigration {
   version: number;
-  apply(database: DatabaseConnectionLike): void;
+  apply(database: SqliteDatabase): void;
 }
-
-type BetterSqliteFactory = (filename: string, options?: Record<string, unknown>) => DatabaseConnectionLike;
-
-const createDatabase = require("better-sqlite3") as BetterSqliteFactory;
 
 const schemaMigrations: SchemaMigration[] = [
   {
@@ -252,7 +234,7 @@ export class DatabaseService {
     });
   }
 
-  private updateSchema(database: DatabaseConnectionLike): void {
+  private updateSchema(database: SqliteDatabase): void {
     const currentUserVersion = Number(database.pragma("user_version", { simple: true }) ?? 0);
     const mostRecentSchemaVersion = schemaMigrations.length;
 
@@ -281,11 +263,11 @@ export class DatabaseService {
     }
   }
 
-  private withDatabase(databasePath: string, callback: (database: DatabaseConnectionLike) => void): void {
-    let database: DatabaseConnectionLike | null = null;
+  private withDatabase(databasePath: string, callback: (database: SqliteDatabase) => void): void {
+    let database: SqliteDatabase | null = null;
 
     try {
-      database = createDatabase(databasePath);
+      database = openSqliteDatabase(databasePath);
       if (!database) {
         throw new Error("db is null");
       }
