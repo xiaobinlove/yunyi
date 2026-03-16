@@ -41,7 +41,7 @@ npm start
 - renderer SQLite sync bridge
 - main database repositories (`client` / `contact` / `contact_setting` / `quick_reply`)
 - task repositories (`mass_send_task` / `mass_group_task`)
-- renderer bridge hot paths for `client`, `contact`, `contact_setting`, `quick_reply`, task tables
+- renderer bridge hot paths for `client`, `contact`, `contact_setting`, `quick_reply`, and task-table create/delete/status flows
 
 应用启动链路现在是：
 

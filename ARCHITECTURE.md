@@ -85,7 +85,7 @@
 - `src/main/services/database-service.ts` 已接管主进程数据库启动、schema 升级和 `app.db` 月表引导。
 - `bootstrap.ts` 会先初始化数据库，再加载 legacy `dist-electron/main.js`。
 - `src/main/database/` 已提供共享 SQLite 抽象，以及 `client`、`contact`、`contact_setting`、`quick_reply`、`mass_send_task`、`mass_group_task` 六组主库仓储。
-- 渲染层的 `qt.initialize/select/insert/update` 仍在 `dist/assets` bundle 内，但 `better-sqlite3` 已通过 `src/main/preload.ts` 和 `database-sync` 桥接到主进程；其中 `contact` / `contact_setting` / `client` / `quick_reply` 以及任务表的关键高频分支已经开始改走仓储，其余通用 SQL 可继续按同样方式逐步收口。
+- 渲染层的 `qt.initialize/select/insert/update` 仍在 `dist/assets` bundle 内，但 `better-sqlite3` 已通过 `src/main/preload.ts` 和 `database-sync` 桥接到主进程；其中 `contact` / `contact_setting` / `client` / `quick_reply` 以及任务表的关键高频分支已经开始改走仓储，当前已覆盖任务列表读取、状态推进、任务创建和任务删除，其余通用 SQL 可继续按同样方式逐步收口。
 
 当前截图模块的状态：
 

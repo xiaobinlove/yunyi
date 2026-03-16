@@ -219,6 +219,14 @@ function isMassSendTaskReceiverByTaskId(sql: string): boolean {
   return normalizeSql(sql) === MASS_SEND_TASK_RECEIVER_BY_TASK_ID_SQL.toLowerCase();
 }
 
+function isMassSendTaskInsert(sql: string): boolean {
+  return normalizeSql(sql).startsWith("insert into mass_send_task (");
+}
+
+function isMassSendTaskReceiverInsert(sql: string): boolean {
+  return normalizeSql(sql).startsWith("insert into mass_send_task_receiver (");
+}
+
 function isMassSendTaskReceiverStatusUpdate(sql: string): boolean {
   return normalizeSql(sql) === MASS_SEND_TASK_RECEIVER_STATUS_UPDATE_SQL.toLowerCase();
 }
@@ -235,8 +243,32 @@ function isMassSendTaskCancelRunning(sql: string): boolean {
   return normalizeSql(sql) === MASS_SEND_TASK_CANCEL_RUNNING_SQL.toLowerCase();
 }
 
+function isMassSendTaskDeleteById(sql: string): boolean {
+  const normalizedSql = normalizeSql(sql);
+  return (
+    normalizedSql === "delete from mass_send_task where id = ?;" ||
+    normalizedSql.startsWith("delete from mass_send_task where id in (")
+  );
+}
+
+function isMassSendTaskReceiverDeleteByTaskId(sql: string): boolean {
+  const normalizedSql = normalizeSql(sql);
+  return (
+    normalizedSql === "delete from mass_send_task_receiver where taskid = ?;" ||
+    normalizedSql.startsWith("delete from mass_send_task_receiver where taskid in (")
+  );
+}
+
 function isMassGroupTaskByAppId(sql: string): boolean {
   return normalizeSql(sql) === MASS_GROUP_TASK_BY_APP_ID_SQL.toLowerCase();
+}
+
+function isMassGroupTaskInsert(sql: string): boolean {
+  return normalizeSql(sql).startsWith("insert into mass_group_task (");
+}
+
+function isMassGroupTaskItemInsert(sql: string): boolean {
+  return normalizeSql(sql).startsWith("insert into mass_group_task_item (");
 }
 
 function isMassGroupTaskItemByTaskId(sql: string): boolean {
@@ -261,6 +293,22 @@ function isMassGroupTaskStatusUpdate(sql: string): boolean {
 
 function isMassGroupTaskCancelRunning(sql: string): boolean {
   return normalizeSql(sql) === MASS_GROUP_TASK_CANCEL_RUNNING_SQL.toLowerCase();
+}
+
+function isMassGroupTaskDeleteById(sql: string): boolean {
+  const normalizedSql = normalizeSql(sql);
+  return (
+    normalizedSql === "delete from mass_group_task where id = ?;" ||
+    normalizedSql.startsWith("delete from mass_group_task where id in (")
+  );
+}
+
+function isMassGroupTaskItemDeleteByTaskId(sql: string): boolean {
+  const normalizedSql = normalizeSql(sql);
+  return (
+    normalizedSql === "delete from mass_group_task_item where taskid = ?;" ||
+    normalizedSql.startsWith("delete from mass_group_task_item where taskid in (")
+  );
 }
 
 function toStringArrayParam(value: unknown): string[] | null {
@@ -481,6 +529,137 @@ function toTaskStatusUpdate(value: unknown): { id: string; taskStatus: string } 
   return typeof record.id === "string" && typeof record.taskStatus === "string"
     ? { id: record.id, taskStatus: record.taskStatus }
     : null;
+}
+
+function toMassSendTaskRecord(value: unknown): MassSendTaskRecord | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const record = value as Record<string, unknown>;
+  const stringFields = ["id", "appId", "accounts", "contacts", "taskName", "taskContents", "messageInterval", "sessionInterval", "taskStatus"] as const;
+  if (stringFields.some((field) => typeof record[field] !== "string")) {
+    return null;
+  }
+
+  const numericFields = ["isTransBeforeSend", "totalNum", "sentNum"] as const;
+  const normalizedNumbers = numericFields.map((field) =>
+    typeof record[field] === "number" ? record[field] : Number(record[field])
+  );
+  if (!normalizedNumbers.every((value) => Number.isFinite(value))) {
+    return null;
+  }
+
+  return {
+    id: record.id as string,
+    appId: record.appId as string,
+    accounts: record.accounts as string,
+    contactSelectType: isNullableString(record.contactSelectType) ? ((record.contactSelectType as string | null | undefined) ?? null) : null,
+    contacts: record.contacts as string,
+    taskName: record.taskName as string,
+    taskContents: record.taskContents as string,
+    isTransBeforeSend: normalizedNumbers[0] as number,
+    messageInterval: record.messageInterval as string,
+    sessionInterval: record.sessionInterval as string,
+    taskStatus: record.taskStatus as string,
+    totalNum: normalizedNumbers[1] as number,
+    sentNum: normalizedNumbers[2] as number,
+    startTime: isNullableString(record.startTime) ? ((record.startTime as string | null | undefined) ?? null) : null,
+    endTime: isNullableString(record.endTime) ? ((record.endTime as string | null | undefined) ?? null) : null,
+    errorMsg: isNullableString(record.errorMsg) ? ((record.errorMsg as string | null | undefined) ?? null) : null,
+  };
+}
+
+function toMassSendTaskReceiverInsertInput(value: unknown): MassSendTaskReceiverRecord | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const record = value as Record<string, unknown>;
+  const stringFields = ["taskId", "appId", "clientId", "account", "contactId", "status"] as const;
+  if (stringFields.some((field) => typeof record[field] !== "string")) {
+    return null;
+  }
+
+  return {
+    id: 0,
+    taskId: record.taskId as string,
+    appId: record.appId as string,
+    clientId: record.clientId as string,
+    account: record.account as string,
+    contactId: record.contactId as string,
+    status: record.status as string,
+    startTime: isNullableString(record.startTime) ? ((record.startTime as string | null | undefined) ?? null) : null,
+    endTime: isNullableString(record.endTime) ? ((record.endTime as string | null | undefined) ?? null) : null,
+    errorMsg: isNullableString(record.errorMsg) ? ((record.errorMsg as string | null | undefined) ?? null) : null,
+  };
+}
+
+function toMassGroupTaskRecord(value: unknown): MassGroupTaskRecord | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const record = value as Record<string, unknown>;
+  const stringFields = ["id", "appId", "accounts", "groupIds", "taskType", "joinInterval", "cloneInterval", "taskStatus"] as const;
+  if (stringFields.some((field) => typeof record[field] !== "string")) {
+    return null;
+  }
+
+  const numericFields = ["cloneNum", "totalNum", "doneNum"] as const;
+  const normalizedNumbers = numericFields.map((field) =>
+    typeof record[field] === "number" ? record[field] : Number(record[field])
+  );
+  if (!normalizedNumbers.every((value) => Number.isFinite(value))) {
+    return null;
+  }
+
+  if (!isNullableString(record.taskName) || !isNullableString(record.startTime) || !isNullableString(record.endTime) || !isNullableString(record.errorMsg)) {
+    return null;
+  }
+
+  return {
+    id: record.id as string,
+    appId: record.appId as string,
+    accounts: record.accounts as string,
+    groupIds: record.groupIds as string,
+    taskType: record.taskType as string,
+    taskName: (record.taskName as string | null | undefined) ?? null,
+    joinInterval: record.joinInterval as string,
+    cloneNum: normalizedNumbers[0] as number,
+    cloneInterval: record.cloneInterval as string,
+    taskStatus: record.taskStatus as string,
+    totalNum: normalizedNumbers[1] as number,
+    doneNum: normalizedNumbers[2] as number,
+    startTime: (record.startTime as string | null | undefined) ?? null,
+    endTime: (record.endTime as string | null | undefined) ?? null,
+    errorMsg: (record.errorMsg as string | null | undefined) ?? null,
+  };
+}
+
+function toMassGroupTaskItemInsertInput(value: unknown): MassGroupTaskItemRecord | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const record = value as Record<string, unknown>;
+  const stringFields = ["taskId", "appId", "clientId", "account", "groupId", "status"] as const;
+  if (stringFields.some((field) => typeof record[field] !== "string")) {
+    return null;
+  }
+
+  return {
+    id: 0,
+    taskId: record.taskId as string,
+    appId: record.appId as string,
+    clientId: record.clientId as string,
+    account: record.account as string,
+    groupId: record.groupId as string,
+    status: record.status as string,
+    startTime: isNullableString(record.startTime) ? ((record.startTime as string | null | undefined) ?? null) : null,
+    endTime: isNullableString(record.endTime) ? ((record.endTime as string | null | undefined) ?? null) : null,
+    errorMsg: isNullableString(record.errorMsg) ? ((record.errorMsg as string | null | undefined) ?? null) : null,
+  };
 }
 
 function mergeContactSetting(result: unknown, setting: ContactSettingRecord | null): unknown {
@@ -746,6 +925,34 @@ export class RendererDatabaseBridgeService {
       }
     }
 
+    if (isMassSendTaskInsert(sql)) {
+      const record = toMassSendTaskRecord(params[0]);
+      if (record) {
+        return repositories.massSendTasks.insertTask(record);
+      }
+    }
+
+    if (isMassSendTaskReceiverInsert(sql)) {
+      const record = toMassSendTaskReceiverInsertInput(params[0]);
+      if (record) {
+        return repositories.massSendTasks.insertReceiver(record);
+      }
+    }
+
+    if (isMassSendTaskDeleteById(sql)) {
+      const ids = toStringArrayParam(params[0]);
+      if (ids) {
+        return repositories.massSendTasks.deleteTasksByIds(ids);
+      }
+    }
+
+    if (isMassSendTaskReceiverDeleteByTaskId(sql)) {
+      const ids = toStringArrayParam(params[0]);
+      if (ids) {
+        return repositories.massSendTasks.deleteReceiversByTaskIds(ids);
+      }
+    }
+
     if (isMassSendTaskReceiverErrorUpdate(sql)) {
       const [, errorMsg, appId, clientId] = params;
       if (typeof errorMsg === "string" && typeof appId === "string" && typeof clientId === "string") {
@@ -772,6 +979,34 @@ export class RendererDatabaseBridgeService {
       if (typeof errorMsg === "string" && typeof appId === "string" && typeof clientId === "string") {
         repositories.massGroupTasks.updateItemsError(appId, clientId, errorMsg);
         return null;
+      }
+    }
+
+    if (isMassGroupTaskInsert(sql)) {
+      const record = toMassGroupTaskRecord(params[0]);
+      if (record) {
+        return repositories.massGroupTasks.insertTask(record);
+      }
+    }
+
+    if (isMassGroupTaskItemInsert(sql)) {
+      const record = toMassGroupTaskItemInsertInput(params[0]);
+      if (record) {
+        return repositories.massGroupTasks.insertItem(record);
+      }
+    }
+
+    if (isMassGroupTaskDeleteById(sql)) {
+      const ids = toStringArrayParam(params[0]);
+      if (ids) {
+        return repositories.massGroupTasks.deleteTasksByIds(ids);
+      }
+    }
+
+    if (isMassGroupTaskItemDeleteByTaskId(sql)) {
+      const ids = toStringArrayParam(params[0]);
+      if (ids) {
+        return repositories.massGroupTasks.deleteItemsByTaskIds(ids);
       }
     }
 

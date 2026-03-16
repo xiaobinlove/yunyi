@@ -136,6 +136,18 @@ export interface MassSendTaskReceiverRecord {
   errorMsg: string | null;
 }
 
+export interface MassSendTaskReceiverInsertInput {
+  taskId: string;
+  appId: string;
+  clientId: string;
+  account: string;
+  contactId: string;
+  status: string;
+  startTime?: string | null;
+  endTime?: string | null;
+  errorMsg?: string | null;
+}
+
 export interface MassGroupTaskRecord {
   id: string;
   appId: string;
@@ -165,4 +177,16 @@ export interface MassGroupTaskItemRecord {
   startTime: string | null;
   endTime: string | null;
   errorMsg: string | null;
+}
+
+export interface MassGroupTaskItemInsertInput {
+  taskId: string;
+  appId: string;
+  clientId: string;
+  account: string;
+  groupId: string;
+  status: string;
+  startTime?: string | null;
+  endTime?: string | null;
+  errorMsg?: string | null;
 }

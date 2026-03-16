@@ -1,4 +1,4 @@
-import type { MassSendTaskReceiverRecord, MassSendTaskRecord } from "../entities";
+import type { MassSendTaskReceiverInsertInput, MassSendTaskReceiverRecord, MassSendTaskRecord } from "../entities";
 import type { SqliteDatabase } from "../sqlite";
 
 function formatSqliteTimestamp(date: Date): string {
@@ -11,6 +11,85 @@ function formatSqliteTimestamp(date: Date): string {
 
 export class MassSendTaskRepository {
   constructor(private readonly database: SqliteDatabase) {}
+
+  insertTask(task: MassSendTaskRecord): unknown {
+    return this.database
+      .prepare(
+        `
+          INSERT INTO mass_send_task (
+            id,
+            appId,
+            accounts,
+            contactSelectType,
+            contacts,
+            taskName,
+            taskContents,
+            isTransBeforeSend,
+            messageInterval,
+            sessionInterval,
+            taskStatus,
+            totalNum,
+            sentNum,
+            startTime,
+            endTime,
+            errorMsg
+          ) VALUES (
+            $id,
+            $appId,
+            $accounts,
+            $contactSelectType,
+            $contacts,
+            $taskName,
+            $taskContents,
+            $isTransBeforeSend,
+            $messageInterval,
+            $sessionInterval,
+            $taskStatus,
+            $totalNum,
+            $sentNum,
+            $startTime,
+            $endTime,
+            $errorMsg
+          );
+        `
+      )
+      .run(task);
+  }
+
+  insertReceiver(receiver: MassSendTaskReceiverInsertInput): unknown {
+    return this.database
+      .prepare(
+        `
+          INSERT INTO mass_send_task_receiver (
+            taskId,
+            appId,
+            clientId,
+            account,
+            contactId,
+            status,
+            startTime,
+            endTime,
+            errorMsg
+          ) VALUES (
+            $taskId,
+            $appId,
+            $clientId,
+            $account,
+            $contactId,
+            $status,
+            $startTime,
+            $endTime,
+            $errorMsg
+          );
+        `
+      )
+      .run({
+        ...receiver,
+        startTime: receiver.startTime ?? null,
+        endTime: receiver.endTime ?? null,
+        errorMsg: receiver.errorMsg ?? null,
+      });
+  }
 
   listAll(): MassSendTaskRecord[] {
     return this.database.prepare<MassSendTaskRecord>("SELECT * FROM mass_send_task;").all();
@@ -84,6 +163,34 @@ export class MassSendTaskRepository {
     this.database
       .prepare("UPDATE mass_send_task SET taskStatus = 'canceled' WHERE taskStatus = 'running' OR taskStatus = 'paused';")
       .run();
+  }
+
+  deleteTasksByIds(taskIds: readonly string[]): unknown {
+    if (taskIds.length === 0) {
+      return null;
+    }
+
+    if (taskIds.length === 1) {
+      return this.database.prepare("DELETE FROM mass_send_task WHERE id = ?;").run(taskIds[0]);
+    }
+
+    return this.database
+      .prepare(`DELETE FROM mass_send_task WHERE id IN (${taskIds.map(() => "?").join(", ")});`)
+      .run(taskIds);
+  }
+
+  deleteReceiversByTaskIds(taskIds: readonly string[]): unknown {
+    if (taskIds.length === 0) {
+      return null;
+    }
+
+    if (taskIds.length === 1) {
+      return this.database.prepare("DELETE FROM mass_send_task_receiver WHERE taskId = ?;").run(taskIds[0]);
+    }
+
+    return this.database
+      .prepare(`DELETE FROM mass_send_task_receiver WHERE taskId IN (${taskIds.map(() => "?").join(", ")});`)
+      .run(taskIds);
   }
 
   private syncTaskProgress(taskId: string): void {

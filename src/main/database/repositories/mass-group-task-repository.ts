@@ -1,4 +1,4 @@
-import type { MassGroupTaskItemRecord, MassGroupTaskRecord } from "../entities";
+import type { MassGroupTaskItemInsertInput, MassGroupTaskItemRecord, MassGroupTaskRecord } from "../entities";
 import type { SqliteDatabase } from "../sqlite";
 
 function formatSqliteTimestamp(date: Date): string {
@@ -11,6 +11,83 @@ function formatSqliteTimestamp(date: Date): string {
 
 export class MassGroupTaskRepository {
   constructor(private readonly database: SqliteDatabase) {}
+
+  insertTask(task: MassGroupTaskRecord): unknown {
+    return this.database
+      .prepare(
+        `
+          INSERT INTO mass_group_task (
+            id,
+            appId,
+            accounts,
+            groupIds,
+            taskType,
+            taskName,
+            joinInterval,
+            cloneNum,
+            cloneInterval,
+            taskStatus,
+            totalNum,
+            doneNum,
+            startTime,
+            endTime,
+            errorMsg
+          ) VALUES (
+            $id,
+            $appId,
+            $accounts,
+            $groupIds,
+            $taskType,
+            $taskName,
+            $joinInterval,
+            $cloneNum,
+            $cloneInterval,
+            $taskStatus,
+            $totalNum,
+            $doneNum,
+            $startTime,
+            $endTime,
+            $errorMsg
+          );
+        `
+      )
+      .run(task);
+  }
+
+  insertItem(item: MassGroupTaskItemInsertInput): unknown {
+    return this.database
+      .prepare(
+        `
+          INSERT INTO mass_group_task_item (
+            taskId,
+            appId,
+            clientId,
+            account,
+            groupId,
+            status,
+            startTime,
+            endTime,
+            errorMsg
+          ) VALUES (
+            $taskId,
+            $appId,
+            $clientId,
+            $account,
+            $groupId,
+            $status,
+            $startTime,
+            $endTime,
+            $errorMsg
+          );
+        `
+      )
+      .run({
+        ...item,
+        startTime: item.startTime ?? null,
+        endTime: item.endTime ?? null,
+        errorMsg: item.errorMsg ?? null,
+      });
+  }
 
   listByAppId(appId: string): MassGroupTaskRecord[] {
     return this.database.prepare<MassGroupTaskRecord>("SELECT * FROM mass_group_task WHERE appId = ?;").all(appId);
@@ -82,6 +159,34 @@ export class MassGroupTaskRepository {
     this.database
       .prepare("UPDATE mass_group_task SET taskStatus = 'canceled' WHERE taskStatus = 'running' OR taskStatus = 'paused';")
       .run();
+  }
+
+  deleteTasksByIds(taskIds: readonly string[]): unknown {
+    if (taskIds.length === 0) {
+      return null;
+    }
+
+    if (taskIds.length === 1) {
+      return this.database.prepare("DELETE FROM mass_group_task WHERE id = ?;").run(taskIds[0]);
+    }
+
+    return this.database
+      .prepare(`DELETE FROM mass_group_task WHERE id IN (${taskIds.map(() => "?").join(", ")});`)
+      .run(taskIds);
+  }
+
+  deleteItemsByTaskIds(taskIds: readonly string[]): unknown {
+    if (taskIds.length === 0) {
+      return null;
+    }
+
+    if (taskIds.length === 1) {
+      return this.database.prepare("DELETE FROM mass_group_task_item WHERE taskId = ?;").run(taskIds[0]);
+    }
+
+    return this.database
+      .prepare(`DELETE FROM mass_group_task_item WHERE taskId IN (${taskIds.map(() => "?").join(", ")});`)
+      .run(taskIds);
   }
 
   private syncTaskProgress(taskId: string): void {
