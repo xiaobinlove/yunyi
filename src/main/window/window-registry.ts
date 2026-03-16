@@ -7,11 +7,19 @@ export class WindowRegistry implements WindowRegistryLike {
   private readonly trays = new Set<Tray>();
   private badgeCount = 0;
   private trackingInstalled = false;
+  private primaryWindow: BrowserWindow | null = null;
 
   trackWindow(window: BrowserWindow): void {
     this.windows.add(window);
+    if (!this.primaryWindow || this.primaryWindow.isDestroyed()) {
+      this.primaryWindow = window;
+    }
+
     window.on("closed", () => {
       this.windows.delete(window);
+      if (this.primaryWindow === window) {
+        this.primaryWindow = [...this.windows].find((candidate) => !candidate.isDestroyed()) ?? null;
+      }
     });
   }
 
@@ -72,12 +80,17 @@ export class WindowRegistry implements WindowRegistryLike {
   }
 
   getMainWindow(): BrowserWindow | null {
+    if (this.primaryWindow && !this.primaryWindow.isDestroyed()) {
+      return this.primaryWindow;
+    }
+
     const aliveWindows = [...this.windows].filter((window) => !window.isDestroyed());
     if (aliveWindows.length === 0) {
       return null;
     }
 
-    return aliveWindows.find((window) => window.isFocused()) ?? aliveWindows[0] ?? null;
+    this.primaryWindow = aliveWindows[0] ?? null;
+    return this.primaryWindow;
   }
 
   getPrimaryTray(): Tray | null {

@@ -29,7 +29,7 @@
 
 - 初始化运行时环境
 - 接管关键 IPC handler
-- 把路径、recipes、session、shell、退出生命周期等逻辑抽成模块
+- 把路径、recipes、session、shell、updater、退出生命周期等逻辑抽成模块
 - 提供共享基础设施，例如 HTTP client
 - 为下一步迁移留稳定边界
 
@@ -48,8 +48,10 @@
 - `window` IPC
 - `session` IPC
 - `shell` IPC
+- `updater` IPC and event bridge
 - recipe request bridge
 - app quit acknowledgement (`app-quit-ok`)
+- main window close handshake coordinator
 - shared runtime HTTP client
 - window / tray registry
 - database directory bootstrap
@@ -60,7 +62,7 @@
 ## Main process structure
 
 - `runtime/`: 路径、数据库目录等运行环境准备
-- `services/`: 可复用业务能力，如 recipes、session、shell、HTTP client
+- `services/`: 可复用业务能力，如 recipes、session、shell、HTTP client、updater
 - `ipc/`: IPC 协议适配层，只负责参数分发和兼容旧接口
 - `lifecycle/`: 应用退出等主进程生命周期控制
 - `window/`: 主窗口、托盘、徽标等桌面行为控制
@@ -68,16 +70,21 @@
 
 ## Remaining legacy entrypoints
 
-当前主进程仍剩 3 个遗留入口需要继续接管：
+当前主进程仍剩 1 个遗留入口需要继续接管：
 
 1. `screenshot`
-2. `updater`
-3. close-before-quit 的主窗口拦截链路
 
 其中：
 
 - `screenshot` 依赖缺失的 `capture.html` / overlay 资源，继续迁移前需要先补全资源或重建覆盖层页面。
-- `updater` 在当前仓库里没有独立依赖包，legacy bundle 内部自带实现；要彻底迁移，需要先把更新依赖重新显式化。
+
+## Explicit dependencies restored
+
+当前已经把以下此前只存在于 legacy bundle 内部的依赖重新显式化：
+
+- `electron-updater`
+
+这一步的目标不是立刻替换所有 legacy 逻辑，而是把真实运行依赖重新放回 `package.json` 和 `src/main`，恢复可升级、可追踪、可测试的工程状态。
 
 ## Principles
 
