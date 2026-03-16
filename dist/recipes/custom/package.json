@@ -1,0 +1,7 @@
+{
+  "id": "custom",
+  "name": "自定义网站",
+  "version": "1.0.0",
+  "order": 19,
+  "config": {}
+}

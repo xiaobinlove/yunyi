@@ -1,0 +1,12 @@
+{
+  "id": "whatsapp",
+  "name": "WhatsApp",
+  "version": "3.9.2",
+  "order": 1,
+  "config": {
+    "serviceURL": "https://web.whatsapp.com",
+    "hasTransVoice": true,
+    "hasCloneVoice": true,
+    "hasInject": true
+  }
+}

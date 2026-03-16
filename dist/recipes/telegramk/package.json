@@ -1,0 +1,11 @@
+{
+  "id": "telegramk",
+  "name": "Telegram K",
+  "version": "1.3.5",
+  "order": 3,
+  "config": {
+    "serviceURL": "https://web.telegram.org/k/",
+    "hasNotificationSound": true,
+    "hasInject": true
+  }
+}

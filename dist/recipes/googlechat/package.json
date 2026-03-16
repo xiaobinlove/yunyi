@@ -1,0 +1,15 @@
+{
+  "id": "googlechat",
+  "name": "Google Chat",
+  "version": "1.2.1",
+  "aliases": [
+    "google-chat",
+    "gChat"
+  ],
+  "order": 10,
+  "config": {
+    "serviceURL": "https://hangouts.google.com",
+    "hasNotificationSound": true,
+    "hasIndirectMessages": true
+  }
+}

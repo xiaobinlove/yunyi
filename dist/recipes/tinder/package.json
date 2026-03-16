@@ -1,0 +1,9 @@
+{
+  "id": "tinder",
+  "name": "Tinder",
+  "version": "1.0.7",
+  "order": 16,
+  "config": {
+    "serviceURL": "chrome-extension://cfohepagpmnodfdmjliccbbigdkfcgia/options.html"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "id": "telegram",
+  "name": "Telegram",
+  "version": "3.5.4",
+  "order": 2,
+  "config": {
+    "serviceURL": "https://web.telegram.org/a/",
+    "hasNotificationSound": true
+  }
+}

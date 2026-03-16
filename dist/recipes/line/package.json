@@ -1,0 +1,10 @@
+{
+  "id": "line",
+  "name": "Line",
+  "version": "1.6.7",
+  "order": 4,
+  "config": {
+    "serviceURL": "chrome-extension://ophjlpahpchlmihnnnihgmmeilfjmjjc/index.html",
+    "hasInject": true
+  }
+}

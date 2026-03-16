@@ -1,0 +1,9 @@
+{
+  "id": "line-business",
+  "name": "Line企业版",
+  "version": "1.0.8",
+  "order": 17,
+  "config": {
+    "serviceURL": "https://chat.line.biz/"
+  }
+}

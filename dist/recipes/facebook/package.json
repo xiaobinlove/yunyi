@@ -1,0 +1,9 @@
+{
+  "id": "facebook",
+  "name": "Facebook",
+  "version": "1.3.3",
+  "order": 5,
+  "config": {
+    "serviceURL": "https://www.facebook.com/login"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "id": "teams",
+  "name": "Teams",
+  "version": "1.0.2",
+  "order": 18,
+  "config": {
+    "serviceURL": "https://teams.microsoft.com"
+  }
+}
