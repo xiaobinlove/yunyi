@@ -14,5 +14,18 @@
     "vue": "^3.4.21",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
-  "main": "dist-electron/main.js"
+  "main": "build/main/bootstrap.js",
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "prettier": "^3.8.1",
+    "typescript": "^5.9.3"
+  },
+  "scripts": {
+    "prepare:recipes": "node scripts/prepare-dev-recipes.js",
+    "readable": "node scripts/generate-readable-bundles.js",
+    "start": "npm run prepare:recipes && npm run build:main && electron .",
+    "dev": "npm run start",
+    "build:main": "tsc -p tsconfig.main.json",
+    "typecheck": "tsc -p tsconfig.main.json --noEmit"
+  }
 }
