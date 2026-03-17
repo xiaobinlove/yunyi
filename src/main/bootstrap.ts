@@ -1,6 +1,6 @@
 import path from "node:path";
 import * as electron from "electron";
-import { app, ipcMain, session } from "electron";
+import { app, session } from "electron";
 import { registerDatabaseSyncHandler } from "./ipc/database-sync-handler";
 import { installLegacyBundlePatches } from "./runtime/legacy-bundle-patcher";
 import paths from "./runtime/paths";
@@ -17,9 +17,6 @@ const rendererDatabaseBridgePreload = path.join(paths.getRootDir(), "build", "ma
 windowRegistry.installTrayTracking(electron);
 windowRegistry.installWindowTracking(app);
 registerDatabaseSyncHandler(rendererDatabaseBridgeService);
-ipcMain.on("yunyi-debug-log", (_event, payload) => {
-  console.log("[yunyi-debug-log]", payload);
-});
 
 app.on("ready", () => {
   const currentPreloads = session.defaultSession.getPreloads();

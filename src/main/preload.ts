@@ -290,16 +290,7 @@ function normalizeInitializeRecipePayload(payload: unknown): unknown {
 
   try {
     return JSON.parse(JSON.stringify(payload));
-  } catch (error) {
-    emitDebugLog("initialize-recipe:serialize-error", {
-      error:
-        error instanceof Error
-          ? {
-              message: error.message,
-              stack: error.stack,
-            }
-          : error,
-    });
+  } catch {
     return {
       recipe: {
         id: "",
@@ -315,106 +306,15 @@ function normalizeInitializeRecipePayload(payload: unknown): unknown {
   }
 }
 
-function safeSerialize(value: unknown): string {
-  try {
-    return JSON.stringify(value);
-  } catch {
-    return String(value);
-  }
-}
-
-function emitDebugLog(label: string, payload?: unknown): void {
-  ipcRenderer.send("yunyi-debug-log", {
-    label,
-    payload: payload === undefined ? undefined : safeSerialize(payload),
-  });
-}
-
-function installRendererErrorLogging(): void {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  window.addEventListener("error", (event) => {
-    const target = event.target as Record<string, unknown> | null;
-    emitDebugLog("renderer-window:error", {
-      message: event.message,
-      filename: event.filename,
-      lineno: event.lineno,
-      colno: event.colno,
-      error:
-        event.error instanceof Error
-          ? {
-              message: event.error.message,
-              stack: event.error.stack,
-            }
-          : event.error,
-      targetTag:
-        target && typeof target.tagName === "string" ? target.tagName : undefined,
-      documentReadyState:
-        typeof document !== "undefined" ? document.readyState : undefined,
-      location:
-        typeof location !== "undefined" ? location.href : undefined,
-    });
-  });
-
-  window.addEventListener("unhandledrejection", (event) => {
-    const reason = event.reason;
-    emitDebugLog("renderer-window:unhandledrejection", {
-      reason:
-        reason instanceof Error
-          ? {
-              message: reason.message,
-              stack: reason.stack,
-            }
-          : reason,
-      documentReadyState:
-        typeof document !== "undefined" ? document.readyState : undefined,
-      location:
-        typeof location !== "undefined" ? location.href : undefined,
-    });
-  });
-}
-
-function attachWebviewDebugListeners(webview: unknown): void {
+function attachWebviewBridgeListeners(webview: unknown): void {
   const target = webview as Record<PropertyKey, unknown> & {
     addEventListener?: (type: string, listener: (event: unknown) => void) => void;
     dispatchEvent?: (event: Event) => boolean;
-    getURL?: () => string;
-    isLoading?: () => boolean;
-    getAttribute?: (name: string) => string | null;
   };
 
   if (target[WEBVIEW_DEBUG_LISTENER_MARK] || typeof target.addEventListener !== "function") {
     return;
   }
-
-  emitDebugLog("webview-debug:attached", {
-    url: typeof target.getURL === "function" ? target.getURL() : undefined,
-    isLoading: typeof target.isLoading === "function" ? target.isLoading() : undefined,
-    preload:
-      typeof target.getAttribute === "function" ? target.getAttribute("preload") : undefined,
-  });
-
-  const emitEvent = (type: string, event?: unknown): void => {
-    const details =
-      event && typeof event === "object"
-        ? (event as Record<string, unknown>)
-        : undefined;
-
-    emitDebugLog(`webview-event:${type}`, {
-      url: typeof target.getURL === "function" ? target.getURL() : undefined,
-      isLoading: typeof target.isLoading === "function" ? target.isLoading() : undefined,
-      preload:
-        typeof target.getAttribute === "function" ? target.getAttribute("preload") : undefined,
-      channel: typeof details?.channel === "string" ? details.channel : undefined,
-      argsLength: Array.isArray(details?.args) ? details.args.length : undefined,
-      errorCode: typeof details?.errorCode === "number" ? details.errorCode : undefined,
-      errorDescription:
-        typeof details?.errorDescription === "string" ? details.errorDescription : undefined,
-      isMainFrame: typeof details?.isMainFrame === "boolean" ? details.isMainFrame : undefined,
-    });
-  };
 
   const dispatchIpcBridgeEvent = (event: unknown): void => {
     const details =
@@ -439,60 +339,12 @@ function attachWebviewDebugListeners(webview: unknown): void {
     );
   };
 
-  target.addEventListener("did-start-loading", (event) => emitEvent("did-start-loading", event));
-  target.addEventListener("dom-ready", (event) => emitEvent("dom-ready", event));
-  target.addEventListener("did-stop-loading", (event) => emitEvent("did-stop-loading", event));
-  target.addEventListener("did-finish-load", (event) => emitEvent("did-finish-load", event));
-  target.addEventListener("did-attach", (event) => emitEvent("did-attach", event));
-  target.addEventListener("ipc-message", (event) => {
-    emitEvent("ipc-message", event);
-    dispatchIpcBridgeEvent(event);
-  });
-  target.addEventListener("did-fail-load", (event) => emitEvent("did-fail-load", event));
-  target.addEventListener("render-process-gone", (event) => emitEvent("render-process-gone", event));
-  target.addEventListener("console-message", (event) => {
-    const details =
-      event && typeof event === "object"
-        ? (event as Record<string, unknown>)
-        : undefined;
-    const message = typeof details?.message === "string" ? details.message : "";
-    const sourceId = typeof details?.sourceId === "string" ? details.sourceId : "";
-    const level = typeof details?.level === "number" ? details.level : undefined;
-
-    if (
-      !message &&
-      !sourceId
-    ) {
-      return;
-    }
-
-    if (
-      level !== undefined &&
-      level < 2 &&
-      !message.includes('Send "ready" to host') &&
-      !message.includes("Initialize Recipe") &&
-      !message.includes("Recipe initialization failed") &&
-      !message.includes("翻译插件初始化完成。") &&
-      !sourceId.includes("recipes")
-    ) {
-      return;
-    }
-
-    emitDebugLog("webview-event:console-message", {
-      url: typeof target.getURL === "function" ? target.getURL() : undefined,
-      preload:
-        typeof target.getAttribute === "function" ? target.getAttribute("preload") : undefined,
-      level,
-      message,
-      sourceId,
-      line: typeof details?.line === "number" ? details.line : undefined,
-    });
-  });
+  target.addEventListener("ipc-message", dispatchIpcBridgeEvent);
 
   target[WEBVIEW_DEBUG_LISTENER_MARK] = true;
 }
 
-function attachDebugListenersToDocumentWebviews(
+function attachWebviewBridgeToDocumentWebviews(
   documentRef:
     | {
         querySelectorAll?(selector: string): ArrayLike<unknown>;
@@ -509,7 +361,7 @@ function attachDebugListenersToDocumentWebviews(
   }
 
   for (const webview of webviews) {
-    attachWebviewDebugListeners(webview);
+    attachWebviewBridgeListeners(webview);
   }
 
   return true;
@@ -556,18 +408,12 @@ function installWebviewSendPatch(): void {
       ...args: unknown[]
     ): unknown {
       if (channel === "recipe-message" && typeof args[0] === "string") {
-        emitDebugLog(`recipe-message:${args[0]}`, {
-          argsLength: args.length,
-        });
-
         if (args[0] === "mass-send-message" && Array.isArray(args[2])) {
           args[2] = args[2].map((contact) => normalizeMassSendContact(contact));
-          emitDebugLog("mass-send-message", args[2]);
         } else if (args[0] === "initialize-recipe") {
           args[1] = normalizeInitializeRecipePayload(args[1]);
         } else if (args[0] === "send-contact-message") {
           args[1] = normalizeSendContactMessagePayload(args[1]);
-          emitDebugLog("send-contact-message", args[1]);
         }
       }
 
@@ -582,13 +428,12 @@ function installWebviewSendPatch(): void {
     });
 
     prototypeRef.send = patchedSend;
-    emitDebugLog("patched webview.send");
     return true;
   };
 
   const updatePatchState = (): { patched: boolean; listenersAttached: boolean } => {
     const patched = tryPatch();
-    const listenersAttached = attachDebugListenersToDocumentWebviews(runtime.document);
+    const listenersAttached = attachWebviewBridgeToDocumentWebviews(runtime.document);
 
     if (patched) {
       runtimeState[WEBVIEW_SEND_PATCH_MARK] = true;
@@ -645,16 +490,11 @@ function installWebviewSendPatch(): void {
     if (intervalHandle) {
       runtime.clearInterval(intervalHandle);
     }
-    emitDebugLog("webview.send patch timeout", {
-      patched: Boolean(runtimeState[WEBVIEW_SEND_PATCH_MARK]),
-      listenersAttached: Boolean(runtimeState[WEBVIEW_DEBUG_LISTENER_MARK]),
-    });
   }, 30000);
 }
 
 if (!globalState[PRELOAD_BRIDGE_MARK]) {
   installBetterSqliteBridge();
-  installRendererErrorLogging();
   installWebviewSendPatch();
   globalState[PRELOAD_BRIDGE_MARK] = true;
 }

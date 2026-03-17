@@ -10,7 +10,6 @@ import { ScreenshotService } from "./services/screenshot-service";
 import { SessionService } from "./services/session-service";
 import { ShellService } from "./services/shell-service";
 import { UpdaterService } from "./services/updater-service";
-import { WebContentsDebugService } from "./services/web-contents-debug-service";
 import { registerWindowHandlers } from "./window/window-handler";
 import type { RuntimeOverridesContext } from "./types";
 
@@ -20,7 +19,6 @@ export function registerRuntimeOverrides({ app, paths, windowRegistry }: Runtime
   const sessionService = new SessionService(app, paths);
   const shellService = new ShellService(windowRegistry);
   const updaterService = new UpdaterService(windowRegistry);
-  const webContentsDebugService = new WebContentsDebugService(app);
 
   registerPathHandler(paths);
   registerRecipesHandler(recipeService);
@@ -30,5 +28,4 @@ export function registerRuntimeOverrides({ app, paths, windowRegistry }: Runtime
   registerWindowHandlers(windowRegistry);
   registerUpdaterHandler(updaterService);
   registerAppExitHandler(app, windowRegistry);
-  webContentsDebugService.install();
 }
