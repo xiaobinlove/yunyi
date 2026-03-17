@@ -14,6 +14,10 @@
 - controller skeleton
 - webview mirror binder skeleton
 - initialize timing orchestrator skeleton
+- legacy renderer migration map
+- host shadow runtime composition
+- host hookup spec
+- guest effect adapter skeleton
 
 ## Not in scope yet
 
@@ -27,3 +31,20 @@
 2. 把 `ready -> initialize-recipe -> dom-ready fallback` 时序迁到 orchestrator
 3. 把 recipe 初始化状态迁到 session store
 4. 再把原本散落在 bundle 里的 UI 逻辑迁出来
+5. 最后才删除旧 bundle 侧并行逻辑
+
+## Legacy bundle mapping
+
+- 当前旧逻辑来源： [readable/dist/assets/index-CQ23iY6_.js](/Users/bin/Documents/souce-code/云译翻译/readable/dist/assets/index-CQ23iY6_.js)
+- 迁移映射清单： [legacy-renderer-migration-map.ts](/Users/bin/Documents/souce-code/云译翻译/src/renderer/recipes/core/legacy-renderer-migration-map.ts)
+
+## Host hookup shape
+
+- 组合入口： [create-recipe-renderer-shadow-runtime.ts](/Users/bin/Documents/souce-code/云译翻译/src/renderer/recipes/core/create-recipe-renderer-shadow-runtime.ts)
+- 当前用途：先给现有组件提供影子接线入口，不替换现有 handler
+- host 接线规范： [legacy-renderer-host-hookup-spec.ts](/Users/bin/Documents/souce-code/云译翻译/src/renderer/recipes/core/legacy-renderer-host-hookup-spec.ts)
+
+## Guest effect split
+
+- adapter 入口： [create-recipe-guest-effect-adapter.ts](/Users/bin/Documents/souce-code/云译翻译/src/renderer/recipes/core/create-recipe-guest-effect-adapter.ts)
+- 旧 `ge()` 副作用映射： [legacy-renderer-guest-effect-map.ts](/Users/bin/Documents/souce-code/云译翻译/src/renderer/recipes/core/legacy-renderer-guest-effect-map.ts)
