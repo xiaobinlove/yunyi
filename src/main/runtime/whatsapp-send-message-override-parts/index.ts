@@ -1,0 +1,16 @@
+import { wrapScriptInIife } from "../script-source";
+import { WHATSAPP_SEND_MESSAGE_OVERRIDE_DOM_FALLBACK_CORE } from "./dom-fallback-core";
+import { WHATSAPP_SEND_MESSAGE_OVERRIDE_INTRO_AND_IDENTIFIERS } from "./intro-and-identifiers";
+import { WHATSAPP_SEND_MESSAGE_OVERRIDE_SEND_AND_CHAT_PATCH } from "./send-and-chat-patch";
+import { WHATSAPP_SEND_MESSAGE_OVERRIDE_WID_AND_BOOTSTRAP } from "./wid-and-bootstrap";
+
+export const WHATSAPP_SEND_MESSAGE_OVERRIDE_FRAGMENTS = [
+  WHATSAPP_SEND_MESSAGE_OVERRIDE_INTRO_AND_IDENTIFIERS,
+  WHATSAPP_SEND_MESSAGE_OVERRIDE_DOM_FALLBACK_CORE,
+  WHATSAPP_SEND_MESSAGE_OVERRIDE_SEND_AND_CHAT_PATCH,
+  WHATSAPP_SEND_MESSAGE_OVERRIDE_WID_AND_BOOTSTRAP,
+] as const;
+
+export function buildWhatsAppSendMessageOverrideSource(): string {
+  return wrapScriptInIife(WHATSAPP_SEND_MESSAGE_OVERRIDE_FRAGMENTS);
+}

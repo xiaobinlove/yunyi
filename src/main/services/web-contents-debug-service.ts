@@ -1,10 +1,21 @@
 import { app, type App, type WebContents, webContents } from "electron";
 
 const DEBUG_PREFIXES = ["[yunyi-whatsapp-send]", "[yunyi-whatsapp-host]"];
+const DEBUG_KEYWORDS = [
+  'Send "ready" to host',
+  "initialize-recipe",
+  "Initialize Recipe",
+  "Recipe initialization failed",
+  "翻译插件初始化完成。",
+  "ipc-message",
+];
 const ATTACH_MARK = Symbol.for("yunyi.webContentsDebugAttached");
 
 function shouldForwardConsoleMessage(message: string): boolean {
-  return DEBUG_PREFIXES.some((prefix) => message.includes(prefix));
+  return (
+    DEBUG_PREFIXES.some((prefix) => message.includes(prefix)) ||
+    DEBUG_KEYWORDS.some((keyword) => message.includes(keyword))
+  );
 }
 
 function formatConsoleMessage(sourceId: string, level: number, message: string): string {
