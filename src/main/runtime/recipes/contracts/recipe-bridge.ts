@@ -23,3 +23,23 @@ export interface GuestToHostRecipeMessageMap {
 export type HostToGuestRecipeChannel = keyof HostToGuestRecipeMessageMap;
 
 export type GuestToHostRecipeChannel = keyof GuestToHostRecipeMessageMap;
+
+export const HOST_TO_GUEST_RECIPE_CHANNELS: readonly HostToGuestRecipeChannel[] = [
+  "initialize-recipe",
+  "global-settings-update",
+  "contact-settings-update",
+  "translate-history",
+  "send-text",
+];
+
+export const GUEST_TO_HOST_RECIPE_CHANNELS: readonly GuestToHostRecipeChannel[] = [
+  "ready",
+  "set-client-account",
+  "set-contact",
+  "set-contact-list",
+  "set-unread-count",
+  "set-online-state",
+  "message-changed",
+  "message-send-success",
+  "inject-js-unsafe",
+];
