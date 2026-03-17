@@ -4,6 +4,7 @@ import path from "node:path";
 import type { PathRuntime } from "../types";
 import {
   buildPatchedInjectJsUnsafeSource,
+  buildPatchedInitializeRecipeSource,
   buildPatchedWhatsAppSendWrapperSource,
   LEGACY_RECIPES_PATCH_TARGETS,
 } from "./legacy-recipes-patch-source";
@@ -30,6 +31,13 @@ export function patchDistElectronRecipes(source: string): string {
     LEGACY_RECIPES_PATCH_TARGETS.whatsappSendWrapperOriginal,
     buildPatchedWhatsAppSendWrapperSource(),
     "dist-electron/recipes.js whatsapp send wrapper"
+  );
+
+  source = replaceStrict(
+    source,
+    LEGACY_RECIPES_PATCH_TARGETS.initializeRecipeOriginal,
+    buildPatchedInitializeRecipeSource(),
+    "dist-electron/recipes.js initializeRecipe whatsapp runtime patch"
   );
 
   source = replaceStrict(
