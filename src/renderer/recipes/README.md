@@ -13,6 +13,7 @@
 - session store skeleton
 - controller skeleton
 - webview mirror binder skeleton
+- initialize timing orchestrator skeleton
 
 ## Not in scope yet
 
@@ -23,5 +24,6 @@
 ## Planned migration order
 
 1. 把现有 webview 生命周期和 guest bridge 事件接到 controller
-2. 把 recipe 初始化状态迁到 session store
-3. 再把原本散落在 bundle 里的 UI 逻辑迁出来
+2. 把 `ready -> initialize-recipe -> dom-ready fallback` 时序迁到 orchestrator
+3. 把 recipe 初始化状态迁到 session store
+4. 再把原本散落在 bundle 里的 UI 逻辑迁出来
