@@ -1,0 +1,85 @@
+import os from "node:os";
+import path from "node:path";
+import fs from "fs-extra";
+import type { RecipeArchivePackageSnapshot, RecipeArchiveSnapshot } from "../../contracts";
+import { getArchiveBackedRecipeSpec } from "./specs";
+
+type TarModule = {
+  x(options: {
+    file: string;
+    cwd: string;
+    preservePaths?: boolean;
+    preserveOwner?: boolean;
+  }): Promise<void>;
+};
+
+const tar = require("tar") as TarModule;
+
+function getProjectRootDir(): string {
+  return path.resolve(__dirname, "../../../../../..");
+}
+
+function getArchivePath(recipeId: string): string {
+  return path.join(getProjectRootDir(), "recipes", "archives", `${recipeId}.tar.gz`);
+}
+
+function readExtractedFile(tempDir: string, relativePath: string): string {
+  const directPath = path.join(tempDir, relativePath);
+  if (fs.pathExistsSync(directPath)) {
+    return fs.readFileSync(directPath, "utf8");
+  }
+
+  const dottedPath = path.join(tempDir, `.${path.sep}${relativePath}`);
+  if (fs.pathExistsSync(dottedPath)) {
+    return fs.readFileSync(dottedPath, "utf8");
+  }
+
+  throw new Error(`Archive entry not found: ${relativePath}`);
+}
+
+function normalizeArchiveSource(source: string): string {
+  return source.replace(/\\x([0-9A-Fa-f]{2})/g, (_match, hex: string) =>
+    String.fromCharCode(Number.parseInt(hex, 16)),
+  );
+}
+
+function collectHintMatches(source: string, hints: readonly string[]): string[] {
+  const normalizedSource = normalizeArchiveSource(source);
+  return hints.filter((hint) => normalizedSource.includes(hint));
+}
+
+export async function buildArchiveBackedRecipeArchiveSnapshot(
+  recipeId: string,
+): Promise<RecipeArchiveSnapshot> {
+  const spec = getArchiveBackedRecipeSpec(recipeId);
+  if (!spec) {
+    throw new Error(`Unknown archive-backed recipe: ${recipeId}`);
+  }
+
+  const archivePath = getArchivePath(recipeId);
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), `yunyi-${recipeId}-archive-`));
+
+  try {
+    await tar.x({
+      file: archivePath,
+      cwd: tempDir,
+      preservePaths: true,
+      preserveOwner: false,
+    });
+
+    const packageInfo = JSON.parse(
+      readExtractedFile(tempDir, "package.json"),
+    ) as RecipeArchivePackageSnapshot;
+    const webviewSource = readExtractedFile(tempDir, "webview.js");
+
+    return {
+      recipeId,
+      archivePath,
+      packageInfo,
+      selectorHints: collectHintMatches(webviewSource, spec.selectorHints),
+      methodHints: collectHintMatches(webviewSource, spec.methodHints),
+    };
+  } finally {
+    fs.removeSync(tempDir);
+  }
+}

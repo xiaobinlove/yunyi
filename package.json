@@ -27,6 +27,7 @@
     "start": "npm run prepare:recipes && npm run build:main && electron .",
     "dev": "npm run start",
     "build:main": "tsc -p tsconfig.main.json",
-    "typecheck": "tsc -p tsconfig.main.json --noEmit"
+    "typecheck": "tsc -p tsconfig.main.json --noEmit",
+    "check:recipe-contracts": "npm run build:main && node scripts/check-recipe-contracts.js"
   }
 }

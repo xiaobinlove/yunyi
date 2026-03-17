@@ -22,14 +22,31 @@ export const TELEGRAM_LEGACY_RUNTIME_CONFIG_OVERRIDES = {
   isObserverSubTree: true,
 } as const;
 
+export const TELEGRAM_K_LEGACY_RUNTIME_CONFIG_OVERRIDES = {
+  userLogged: ".chatlist,.chat.tabs-tab.active",
+  main: ".chat.tabs-tab.active",
+  friendList: ".chatlist",
+  otherfriendLists: ".popup-input-container",
+  allMsg: ".bubble,.message,[data-mid]",
+  ipt: ".chat.tabs-tab.active .input-message-input,.chat-input.chat-input-main",
+  chatDelay: 500,
+  isNeedInitChat: true,
+  isObserverSubTree: true,
+} as const;
+
 export function buildTelegramRecipeRuntimeConfig(_payload: RecipeInitPayload): RecipeRuntimeConfig {
+  const recipeId = String(_payload.recipe.id).toLowerCase();
+  const isTelegramK = recipeId === "telegramk";
+
   return {
     selectors: {
-      appRoot: "#Main",
-      chatRoot: ".MessageList",
-      sidebarRoot: ".Transition .LeftSearch",
-      messageItems: ".text-content.with-meta",
-      composer: "#editable-message-text,.messages-layout .Transition_slide-active #editable-message-text",
+      appRoot: isTelegramK ? ".chat.tabs-tab.active" : "#Main",
+      chatRoot: isTelegramK ? ".chat.tabs-tab.active .bubbles>.scrollable" : ".MessageList",
+      sidebarRoot: isTelegramK ? ".chatlist" : ".Transition .LeftSearch",
+      messageItems: isTelegramK ? ".bubble,.message,[data-mid]" : ".text-content.with-meta",
+      composer: isTelegramK
+        ? ".chat.tabs-tab.active .input-message-input,.chat-input.chat-input-main"
+        : "#editable-message-text,.messages-layout .Transition_slide-active #editable-message-text",
     },
     observer: {
       subtree: true,
@@ -38,7 +55,9 @@ export function buildTelegramRecipeRuntimeConfig(_payload: RecipeInitPayload): R
     },
     capabilities: TELEGRAM_CAPABILITIES,
     legacyConfig: {
-      ...TELEGRAM_LEGACY_RUNTIME_CONFIG_OVERRIDES,
+      ...(isTelegramK
+        ? TELEGRAM_K_LEGACY_RUNTIME_CONFIG_OVERRIDES
+        : TELEGRAM_LEGACY_RUNTIME_CONFIG_OVERRIDES),
     },
   };
 }

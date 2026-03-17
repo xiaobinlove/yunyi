@@ -2,7 +2,7 @@ import type { RecipeInitPayload } from "./recipe-init-payload";
 import type { RecipeRuntimeConfig } from "./recipe-runtime-config";
 import type { RecipeRuntimeMethods } from "./recipe-runtime-methods";
 
-export type RecipePlatform = "whatsapp" | "telegram" | "line";
+export type RecipePlatform = "whatsapp" | "telegram" | "line" | "archive";
 
 export type RecipeLegacyConfigValue = string | number | boolean | null;
 

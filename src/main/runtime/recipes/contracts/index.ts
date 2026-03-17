@@ -1,5 +1,6 @@
 export * from "./message-envelope";
 export * from "./recipe-adapter";
+export * from "./recipe-archive-snapshot";
 export * from "./recipe-bridge";
 export * from "./recipe-contract-snapshot";
 export * from "./recipe-init-payload";

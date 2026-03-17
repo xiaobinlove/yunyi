@@ -1,6 +1,7 @@
 import type { RecipeAdapter, RecipeInitPayload } from "../../contracts";
 import {
   buildTelegramRecipeRuntimeConfig,
+  TELEGRAM_K_LEGACY_RUNTIME_CONFIG_OVERRIDES,
   TELEGRAM_LEGACY_RUNTIME_CONFIG_OVERRIDES,
 } from "./runtime-config";
 import {
@@ -53,7 +54,10 @@ function createTelegramAdapter(recipeId: "telegram" | "telegramk"): RecipeAdapte
     },
     migration: {
       legacyConfigSource: `recipes/archives/${recipeId}.tar.gz:webview.js`,
-      legacyConfigOverrides: TELEGRAM_LEGACY_RUNTIME_CONFIG_OVERRIDES,
+      legacyConfigOverrides:
+        recipeId === "telegramk"
+          ? TELEGRAM_K_LEGACY_RUNTIME_CONFIG_OVERRIDES
+          : TELEGRAM_LEGACY_RUNTIME_CONFIG_OVERRIDES,
       legacyMethodBindings: TELEGRAM_LEGACY_METHOD_BINDINGS,
     },
   };
