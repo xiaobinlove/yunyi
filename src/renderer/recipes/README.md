@@ -18,6 +18,7 @@
 - host shadow runtime composition
 - host hookup spec
 - guest effect adapter skeleton
+- shadow hookup pilot spec
 
 ## Not in scope yet
 
@@ -48,3 +49,8 @@
 
 - adapter 入口： [create-recipe-guest-effect-adapter.ts](/Users/bin/Documents/souce-code/云译翻译/src/renderer/recipes/core/create-recipe-guest-effect-adapter.ts)
 - 旧 `ge()` 副作用映射： [legacy-renderer-guest-effect-map.ts](/Users/bin/Documents/souce-code/云译翻译/src/renderer/recipes/core/legacy-renderer-guest-effect-map.ts)
+
+## Shadow Hookup Pilot
+
+- pilot spec： [recipe-shadow-hookup-pilot-spec.ts](/Users/bin/Documents/souce-code/云译翻译/src/renderer/recipes/core/recipe-shadow-hookup-pilot-spec.ts)
+- pilot checklist： [recipe-shadow-hookup-pilot-checklist.ts](/Users/bin/Documents/souce-code/云译翻译/src/renderer/recipes/core/recipe-shadow-hookup-pilot-checklist.ts)
