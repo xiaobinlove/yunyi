@@ -16,12 +16,79 @@
     "text/x-vcard": "vcf",
     "text/vcard": "vcf",
   };
+  const LOG_PREFIX = "[yunyi-whatsapp-send]";
+
+  console.log(LOG_PREFIX, "boot");
+
+  function normalizeId(value) {
+    if (typeof value === "string" || typeof value === "number") {
+      return String(value).trim();
+    }
+
+    if (!value || typeof value !== "object") {
+      return "";
+    }
+
+    const nestedCandidates = [
+      value._serialized,
+      value.user,
+      value.phoneNumber,
+      value.contactId,
+      value.contactID,
+      value.id,
+      value.wid,
+      value.jid,
+      value.remote,
+      value.chatId,
+      value.participant,
+      value.contact,
+      value.value,
+    ];
+
+    for (const candidate of nestedCandidates) {
+      const normalized = normalizeId(candidate);
+      if (normalized) {
+        return normalized;
+      }
+    }
+
+    return "";
+  }
+
+  function detectChatType(contact, normalizedId) {
+    const explicitType =
+      contact?.type ?? contact?.contactType ?? contact?.chatType ?? contact?.messageType;
+
+    if (explicitType) {
+      return explicitType;
+    }
+
+    if (contact?.isGroup === true || normalizedId.endsWith("@g.us") || /-\d+$/.test(normalizedId)) {
+      return "group";
+    }
+
+    return "chat";
+  }
+
+  function normalizeCardPayload(card) {
+    if (!card || typeof card !== "object") {
+      return card;
+    }
+
+    const contactId = normalizeId(card.id || card.contactId || card);
+
+    return {
+      ...card,
+      id: contactId || card.id,
+      contactId: contactId || card.contactId,
+      name: String(card.name || card.nickname || card.displayName || "").trim(),
+    };
+  }
 
   function toChatId(contact) {
-    const rawContactId =
-      typeof contact === "string" ? contact : contact?.contactId ?? contact?.id ?? "";
-    const chatType = typeof contact === "object" ? contact?.type : "chat";
-    const contactId = String(rawContactId || "").trim();
+    const contactId =
+      typeof contact === "string" ? contact.trim() : normalizeId(contact?.contactId ?? contact?.id ?? contact);
+    const chatType = typeof contact === "object" ? detectChatType(contact, contactId) : "chat";
 
     if (!contactId) {
       throw new Error("Missing WhatsApp contactId");
@@ -36,6 +103,208 @@
     }
 
     return `${contactId.replace(/^\+/, "")}@c.us`;
+  }
+
+  function normalizeChatTarget(target) {
+    const normalizedId = normalizeId(target);
+    if (!normalizedId) {
+      return target;
+    }
+
+    if (normalizedId.includes("@")) {
+      return normalizedId;
+    }
+
+    return toChatId(target);
+  }
+
+  function patchWppChat() {
+    const chat = window.WPP?.chat;
+    let patched = false;
+
+    if (!chat) {
+      return false;
+    }
+
+    if (typeof chat.sendTextMessage === "function" && !chat.sendTextMessage.__yunyiWhatsappWrapped) {
+      const originalSendTextMessage = chat.sendTextMessage.bind(chat);
+      const wrappedSendTextMessage = (target, ...args) => {
+        const chatId = toChatId(target);
+        console.log(LOG_PREFIX, "sendTextMessage", { target, chatId });
+        return originalSendTextMessage(chatId, ...args);
+      };
+
+      wrappedSendTextMessage.__yunyiWhatsappWrapped = true;
+      chat.sendTextMessage = wrappedSendTextMessage;
+      patched = true;
+      console.log(LOG_PREFIX, "patched sendTextMessage");
+    }
+
+    if (typeof chat.sendFileMessage === "function" && !chat.sendFileMessage.__yunyiWhatsappWrapped) {
+      const originalSendFileMessage = chat.sendFileMessage.bind(chat);
+      const wrappedSendFileMessage = (target, ...args) => {
+        const chatId = toChatId(target);
+        console.log(LOG_PREFIX, "sendFileMessage", { target, chatId });
+        return originalSendFileMessage(chatId, ...args);
+      };
+
+      wrappedSendFileMessage.__yunyiWhatsappWrapped = true;
+      chat.sendFileMessage = wrappedSendFileMessage;
+      patched = true;
+      console.log(LOG_PREFIX, "patched sendFileMessage");
+    }
+
+    if (
+      typeof chat.sendVCardContactMessage === "function" &&
+      !chat.sendVCardContactMessage.__yunyiWhatsappWrapped
+    ) {
+      const originalSendVCardContactMessage = chat.sendVCardContactMessage.bind(chat);
+      const wrappedSendVCardContactMessage = (target, card, ...args) => {
+        const chatId = toChatId(target);
+        const normalizedCard = normalizeCardPayload(card);
+        console.log(LOG_PREFIX, "sendVCardContactMessage", { target, chatId, card: normalizedCard });
+        return originalSendVCardContactMessage(chatId, normalizedCard, ...args);
+      };
+
+      wrappedSendVCardContactMessage.__yunyiWhatsappWrapped = true;
+      chat.sendVCardContactMessage = wrappedSendVCardContactMessage;
+      patched = true;
+      console.log(LOG_PREFIX, "patched sendVCardContactMessage");
+    }
+
+    if (typeof chat.sendRawMessage === "function" && !chat.sendRawMessage.__yunyiWhatsappWrapped) {
+      const originalSendRawMessage = chat.sendRawMessage.bind(chat);
+      const wrappedSendRawMessage = (target, ...args) => {
+        const chatId = normalizeChatTarget(target);
+        if (chatId !== target) {
+          console.log(LOG_PREFIX, "sendRawMessage", { target, chatId });
+        }
+        return originalSendRawMessage(chatId, ...args);
+      };
+
+      wrappedSendRawMessage.__yunyiWhatsappWrapped = true;
+      chat.sendRawMessage = wrappedSendRawMessage;
+      patched = true;
+      console.log(LOG_PREFIX, "patched sendRawMessage");
+    }
+
+    if (typeof chat.find === "function" && !chat.find.__yunyiWhatsappWrapped) {
+      const originalFind = chat.find.bind(chat);
+      const wrappedFind = (target, ...args) => {
+        const chatId = normalizeChatTarget(target);
+        if (chatId !== target) {
+          console.log(LOG_PREFIX, "chat.find", { target, chatId });
+        }
+        return originalFind(chatId, ...args);
+      };
+
+      wrappedFind.__yunyiWhatsappWrapped = true;
+      chat.find = wrappedFind;
+      patched = true;
+      console.log(LOG_PREFIX, "patched chat.find");
+    }
+
+    if (typeof chat.get === "function" && !chat.get.__yunyiWhatsappWrapped) {
+      const originalGet = chat.get.bind(chat);
+      const wrappedGet = (target, ...args) => {
+        const chatId = normalizeChatTarget(target);
+        if (chatId !== target) {
+          console.log(LOG_PREFIX, "chat.get", { target, chatId });
+        }
+        return originalGet(chatId, ...args);
+      };
+
+      wrappedGet.__yunyiWhatsappWrapped = true;
+      chat.get = wrappedGet;
+      patched = true;
+      console.log(LOG_PREFIX, "patched chat.get");
+    }
+
+    const requiredMethods = [
+      "sendTextMessage",
+      "sendFileMessage",
+      "sendVCardContactMessage",
+      "sendRawMessage",
+      "find",
+      "get",
+    ];
+
+    return (
+      patched ||
+      requiredMethods.every(
+        (methodName) =>
+          typeof chat[methodName] !== "function" || chat[methodName].__yunyiWhatsappWrapped
+      )
+    );
+  }
+
+  function patchWidFactory() {
+    const widFactory = window.WPP?.whatsapp?.WidFactory;
+    const whatsapp = window.WPP?.whatsapp;
+    let patched = false;
+
+    if (widFactory && typeof widFactory.createWid === "function" && !widFactory.createWid.__yunyiWhatsappWrapped) {
+      const originalCreateWid = widFactory.createWid.bind(widFactory);
+      const wrappedCreateWid = (value, ...args) => {
+        const normalizedValue = normalizeId(value) || value;
+        if (normalizedValue !== value) {
+          console.log(LOG_PREFIX, "createWid", { value, normalizedValue });
+        }
+        return originalCreateWid(normalizedValue, ...args);
+      };
+
+      wrappedCreateWid.__yunyiWhatsappWrapped = true;
+      widFactory.createWid = wrappedCreateWid;
+      patched = true;
+      console.log(LOG_PREFIX, "patched createWid");
+    }
+
+    if (
+      widFactory &&
+      typeof widFactory.createUserWid === "function" &&
+      !widFactory.createUserWid.__yunyiWhatsappWrapped
+    ) {
+      const originalCreateUserWid = widFactory.createUserWid.bind(widFactory);
+      const wrappedCreateUserWid = (value, ...args) => {
+        const normalizedValue = normalizeId(value) || value;
+        if (normalizedValue !== value) {
+          console.log(LOG_PREFIX, "createUserWid", { value, normalizedValue });
+        }
+        return originalCreateUserWid(normalizedValue, ...args);
+      };
+
+      wrappedCreateUserWid.__yunyiWhatsappWrapped = true;
+      widFactory.createUserWid = wrappedCreateUserWid;
+      patched = true;
+      console.log(LOG_PREFIX, "patched createUserWid");
+    }
+
+    if (whatsapp && typeof whatsapp.assertWid === "function" && !whatsapp.assertWid.__yunyiWhatsappWrapped) {
+      const originalAssertWid = whatsapp.assertWid.bind(whatsapp);
+      const wrappedAssertWid = (value, ...args) => {
+        const normalizedValue = normalizeId(value) || value;
+        if (normalizedValue !== value) {
+          console.log(LOG_PREFIX, "assertWid", { value, normalizedValue });
+        }
+        return originalAssertWid(normalizedValue, ...args);
+      };
+
+      wrappedAssertWid.__yunyiWhatsappWrapped = true;
+      whatsapp.assertWid = wrappedAssertWid;
+      patched = true;
+      console.log(LOG_PREFIX, "patched assertWid");
+    }
+
+    return (
+      patched ||
+      (widFactory
+        ? (typeof widFactory.createWid !== "function" || widFactory.createWid.__yunyiWhatsappWrapped) &&
+          (typeof widFactory.createUserWid !== "function" || widFactory.createUserWid.__yunyiWhatsappWrapped)
+        : false) &&
+        (whatsapp
+          ? typeof whatsapp.assertWid !== "function" || whatsapp.assertWid.__yunyiWhatsappWrapped
+          : false)
+    );
   }
 
   function getMimeType(input, fallbackMimeType) {
@@ -168,8 +437,8 @@
 
   async function sendCard(contact, content) {
     const chatId = toChatId(contact);
-    const card = typeof content === "string" ? JSON.parse(content) : content || {};
-    const contactId = String(card.id || card.contactId || "").trim();
+    const card = normalizeCardPayload(typeof content === "string" ? JSON.parse(content) : content || {});
+    const contactId = normalizeId(card.id || card.contactId || card);
     const name = String(card.name || card.nickname || card.displayName || "").trim();
 
     if (!contactId) {
@@ -194,6 +463,7 @@
     const originalInitCustomEvent = window.ferdium.initCustomEvent.bind(window.ferdium);
 
     const wrappedInitCustomEvent = (customEvent) => {
+      console.log(LOG_PREFIX, "wrap initCustomEvent", { customEvent });
       const nextCustomEvent = {
         ...customEvent,
         sendMessage: {
@@ -210,15 +480,29 @@
 
     wrappedInitCustomEvent.__yunyiWhatsappWrapped = true;
     window.ferdium.initCustomEvent = wrappedInitCustomEvent;
+    console.log(LOG_PREFIX, "patched initCustomEvent");
     return true;
   }
 
-  if (patchInitCustomEvent()) {
+  function patchAll() {
+    const initCustomEventPatched = patchInitCustomEvent();
+    const chatPatched = patchWppChat();
+    const widPatched = patchWidFactory();
+    return { initCustomEventPatched, chatPatched, widPatched };
+  }
+
+  const initialState = patchAll();
+  if (
+    initialState.initCustomEventPatched &&
+    initialState.chatPatched &&
+    initialState.widPatched
+  ) {
     return;
   }
 
   const timer = window.setInterval(() => {
-    if (patchInitCustomEvent()) {
+    const state = patchAll();
+    if (state.initCustomEventPatched && state.chatPatched && state.widPatched) {
       window.clearInterval(timer);
     }
   }, 200);

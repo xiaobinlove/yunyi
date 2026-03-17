@@ -36,6 +36,10 @@ export class RecipeService {
     return this.paths.getUserDataDir("recipes");
   }
 
+  private getProjectRecipesDir(): string {
+    return path.join(this.paths.getDistDir(), "recipes");
+  }
+
   private getArchivePath(recipeId: string): string {
     return path.join(this.paths.getRecipesArchivesDir(), `${recipeId}.tar.gz`);
   }
@@ -68,6 +72,15 @@ export class RecipeService {
   }
 
   getInstalledRecipes(): InstalledRecipe[] {
+    if (!this.app.isPackaged) {
+      const projectRecipesDir = this.getProjectRecipesDir();
+      const supportedRecipes = this.getSupportRecipes();
+
+      return supportedRecipes
+        .map((recipe) => this.readInstalledRecipe(projectRecipesDir, recipe.id))
+        .filter((recipe: InstalledRecipe | null): recipe is InstalledRecipe => Boolean(recipe?.id));
+    }
+
     const installedRecipesDir = this.getInstalledRecipesDir();
     fs.ensureDirSync(installedRecipesDir);
 
@@ -92,6 +105,15 @@ export class RecipeService {
   }
 
   async installRecipe({ recipeId, internalVersion }: RecipeInstallRequest): Promise<string> {
+    if (!this.app.isPackaged) {
+      const projectPackagePath = path.join(this.getProjectRecipesDir(), recipeId, "package.json");
+      if (!fs.pathExistsSync(projectPackagePath)) {
+        throw new Error(`Project recipe not found: ${projectPackagePath}`);
+      }
+
+      return recipeId;
+    }
+
     const installedRecipesDir = this.getInstalledRecipesDir();
     const installedPackagePath = path.join(installedRecipesDir, recipeId, "package.json");
 

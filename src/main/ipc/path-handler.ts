@@ -1,6 +1,7 @@
 import path from "node:path";
 import { ipcMain } from "electron";
 import { getLocalAppDatabasePath, getPrimaryDatabasePath } from "../runtime/database";
+import { ensurePatchedLegacyRecipesPreload } from "../runtime/legacy-bundle-patcher";
 import type { PathRuntime } from "../types";
 
 type PathMethod =
@@ -21,7 +22,7 @@ function createPathHandler(paths: PathRuntime) {
       case "getLocalDbPath":
         return getLocalAppDatabasePath(paths);
       case "getPreloadPath":
-        return path.join(paths.getDistElectronDir(), "recipes.js");
+        return ensurePatchedLegacyRecipesPreload(paths);
       case "getUserDataDir":
         return paths.getUserDataDir();
       case "chooseUserDataDir":
